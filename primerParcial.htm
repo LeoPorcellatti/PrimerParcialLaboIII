@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Primer Parcial</title>
+        <link rel="stylesheet" href="estilo.css">
+    </head>
+    <script>
+        class Vehiculo{
+            id;
+            modelo;
+            anoFab;
+            velMax;
+
+            constructor(id, modelo, anoFab, velMax){
+                this.id = id;
+                this.modelo = modelo;
+                this.anoFab = anoFab;
+                this.velMax = velMax;
+            }
+
+            toString(){
+                return `id: ${this.id}, modelo: ${this.modelo}, anoFab: ${this.anoFab}, velMax: ${this.velMax}`;
+            }
+        }
+
+        class Aereo extends Vehiculo{
+            altMax;
+            autonomia;
+
+            constructor(id, modelo, anoFab, velMax, altMax, autonomia){
+                super(id, modelo, anoFab, velMax);
+                this.altMax = altMax;
+                this.autonomia = autonomia;
+            }
+        }
+
+        class Terrestre extends Vehiculo{
+            cantPue;
+            cantRue;
+
+            constructor(id, modelo, anoFab, velMax, cantPue, cantRue){
+                super(id, modelo, anoFab, velMax);
+                this.cantPue = cantPue;
+                this.cantRue = cantRue;
+            }
+        }
+
+        let stringVehiculos = '[{"id":14, "modelo":"Ferrari F100", "anoFab":1998, "velMax":400, "cantPue":2, "cantRue":4},'+
+        '{"id":51, "modelo":"Dodge Viper", "anoFab":1991, "velMax":266, "cantPue":2, "cantRue":4},'+
+        '{"id":67, "modelo":"Boeing CH-47 Chinook","anoFab":1962, "velMax":302, "altMax":6, "autonomia":1200},'+
+        '{"id":666, "modelo":"Aprilia RSV 1000 R","anoFab":2004, "velMax":280, "cantPue":0, "cantRue":2},'+
+        '{"id":872, "modelo":"Boeing 747-400", "anoFab":1989,"velMax":988, "altMax":13, "autonomia":13450},'+
+        '{"id":742, "modelo":"Cessna CH-1 SkyhookR", "anoFab":1953,"velMax":174, "altMax":3, "autonomia":870}]';
+
+        let jsonVehiculos = JSON.parse(stringVehiculos);
+
+        let vehiculos = jsonVehiculos.map(vehiculo => {
+            if(vehiculo.altMax !== undefined && vehiculo.autonomia !== undefined){
+                return new Aereo (vehiculo.id, vehiculo.modelo, vehiculo.anoFab, vehiculo.velMax, vehiculo.altMax, vehiculo.autonomia);
+            } else if(vehiculo.cantPue !== undefined && vehiculo.cantRue !== undefined){
+                return new Terrestre (vehiculo.id, vehiculo.modelo, vehiculo.anoFab, vehiculo.velMax, vehiculo.cantPue, vehiculo.cantRue);
+            }
+        })
+
+        function cargarVehiculo(tipo){
+            let tablaDatos = document.getElementById("tbodyDatos");
+            tablaDatos.innerHTML = "";
+
+            vehiculos.forEach(vehiculo => {
+                let fila = tablaDatos.insertRow();
+
+                if(tipo === "Todos" ||
+                (tipo === "Aereo" && vehiculo instanceof Aereo) ||
+                (tipo === "Terrestre" && vehiculo instanceof Terrestre)){
+
+                    fila.insertCell().innerHTML = vehiculo.id;
+                    fila.insertCell().innerHTML = vehiculo.modelo;
+                    fila.insertCell().innerHTML = vehiculo.anoFab;
+                    fila.insertCell().innerHTML = vehiculo.velMax;
+                    fila.insertCell().innerHTML = vehiculo instanceof Aereo ? vehiculo.altMax : "--";
+                    fila.insertCell().innerHTML = vehiculo instanceof Aereo ? vehiculo.autonomia : "--";
+                    fila.insertCell().innerHTML = vehiculo instanceof Terrestre ? vehiculo.cantPue : "--";
+                    fila.insertCell().innerHTML = vehiculo instanceof Terrestre ? vehiculo.cantRue : "--";
+
+                    fila.addEventListener("dblclick", () => {
+                        mostrarDatos(vehiculo);
+                    })
+                }                
+            });
+        }
+
+        function cambiarFiltro(){
+            let selectBox = document.getElementById("slFiltro");
+            let filtroSeleccionado = selectBox.value;
+
+            cargarVehiculo(filtroSeleccionado);
+            document.getElementById("txtPromedioVel").value = "";
+        }
+
+        function calcularVelPromedio(){
+            let selectBox = document.getElementById("slFiltro");
+            let filtroSeleccionado = selectBox.value;
+
+            let vehiculosFiltrados = vehiculos.filter(vehiculo =>
+                filtroSeleccionado === "Todos" ||
+                (filtroSeleccionado === "Aereo" && vehiculo instanceof Aereo) ||
+                (filtroSeleccionado === "Terrestre" && vehiculo instanceof Terrestre));
+            
+            if(vehiculosFiltrados.length > 0){
+                let promedioVelMax = vehiculosFiltrados.map(vehiculo => vehiculo.velMax)
+                .reduce((total, velMax) => total + velMax, 0) / vehiculosFiltrados.length;
+
+                document.getElementById("txtPromedioVel").value = promedioVelMax.toFixed(2);
+            }
+        }
+
+        function cambiarFormulario(){
+            bloquearCampos()
+            let formularioDatos = document.getElementById("formDatos");
+            let formularioAbm = document.getElementById("formAbm");
+
+            if(formularioDatos.style.display === "none"){
+                formularioDatos.style.display = "block";
+                formularioAbm.style.display = "none";
+            } else {
+                formularioDatos.style.display = "none";
+                formularioAbm.style.display = "block";
+            } 
+        }
+
+        let vehiculoSeleccionado = null; 
+
+        function mostrarDatos(vehiculo){            
+            deshabilitarDatos();
+            
+            let botonModificar = document.getElementById("btnModificar");
+            let botonEliminar = document.getElementById("btnEliminar");
+
+            botonModificar.style.display = "block";
+            botonEliminar.style.display = "block";
+
+            vehiculoSeleccionado  = vehiculo;
+
+            document.getElementById("txtId").value = vehiculo.id;
+            document.getElementById("txtModelo").value = vehiculo.modelo;
+            document.getElementById("txtAnoFab").value = vehiculo.anoFab;
+            document.getElementById("txtVelMax").value = vehiculo.velMax;
+            if(vehiculo instanceof Aereo){
+                document.getElementById("txtAltMax").value = vehiculo.altMax;
+                document.getElementById("txtAutonomia").value = vehiculo.autonomia;
+                document.getElementById("slTipo").value = "Aereo";
+            } else if (vehiculo instanceof Terrestre){
+                document.getElementById("txtCantPue").value = vehiculo.cantPue;
+                document.getElementById("txtCantRue").value = vehiculo.cantRue;
+                document.getElementById("slTipo").value = "Terrestre";
+            }
+            cambiarFormulario();
+        }
+
+        function deshabilitarDatos(){
+            document.getElementById("slTipo").disabled = true;
+            document.getElementById("txtId").disabled = true;
+            document.getElementById("txtModelo").disabled = true;
+            document.getElementById("txtAnoFab").disabled = true;
+            document.getElementById("txtVelMax").disabled = true;
+            document.getElementById("txtAltMax").disabled = true;
+            document.getElementById("txtAutonomia").disabled = true;
+            document.getElementById("txtCantPue").disabled = true;
+            document.getElementById("txtCantRue").disabled = true;
+            
+            document.getElementById("btnAgregarAbm").style.display = "none";
+        }
+
+        function habilitarDatos(){
+            document.getElementById("slTipo").disabled = false;
+            document.getElementById("txtModelo").disabled = false;
+            document.getElementById("txtAnoFab").disabled = false;
+            document.getElementById("txtVelMax").disabled = false;
+            document.getElementById("txtAltMax").disabled = false;
+            document.getElementById("txtAutonomia").disabled = false;
+            document.getElementById("txtCantPue").disabled = false;
+            document.getElementById("txtCantRue").disabled = false;
+            
+            document.getElementById("btnModificar").style.display = "block"; 
+        }
+
+        function agregarVehiculo(){ 
+            let id = parseInt(vehiculos.length > 0 ? Math.max (...vehiculos.map(v => v.id)) + 1 : 1);
+            let modelo = document.getElementById("txtModelo").value;
+            let anoFab = parseInt(document.getElementById("txtAnoFab").value);
+            let velMax = parseInt(document.getElementById("txtVelMax").value);
+
+            if(validarVehiculo(modelo, anoFab, velMax)){
+                if(document.getElementById("slTipo").value === "Aereo"){
+                    let altMax = parseInt(document.getElementById("txtAltMax").value);
+                    let autonomia = parseInt(document.getElementById("txtAutonomia").value);
+                    if(validarAereo(altMax, autonomia)){
+                        let nuevoVehiculo = new Aereo(id, modelo, anoFab, velMax, altMax, autonomia);
+                        vehiculos.push(nuevoVehiculo);
+                        cargarVehiculo("Todos");
+                        cambiarFormulario();
+                        limpiarCampos();                        
+                    }
+                } else if(document.getElementById("slTipo").value ==="Terrestre"){
+                    let cantPue = parseInt(document.getElementById("txtCantPue").value);
+                    let cantRue = parseInt(document.getElementById("txtCantRue").value);
+                    if(validarTerrestre(cantPue, cantRue)){
+                        let nuevoVehiculo = new Terrestre(id, modelo, anoFab, velMax, cantPue, cantRue);
+                        vehiculos.push(nuevoVehiculo);
+                        cargarVehiculo("Todos");
+                        cambiarFormulario();
+                        limpiarCampos();                        
+                    }
+                }
+            }
+        }
+
+        function modificarVehiculo() {
+        }
+
+        function eliminarVehiculo() {
+            if (vehiculoSeleccionado) {
+                vehiculos = vehiculos.filter(v => v.id !== vehiculoSeleccionado.id);
+                cargarVehiculo(document.getElementById("slFiltro").value);
+                cambiarFormulario(); 
+                limpiarCampos(); 
+                vehiculoSeleccionado = null; 
+            } else {
+                alert("No hay vehículo seleccionado para eliminar.");
+            }
+        }
+
+
+        function limpiarCampos(){
+            document.getElementById("txtModelo").value = "";
+            document.getElementById("txtAnoFab").value = "";
+            document.getElementById("txtVelMax").value = "";
+            document.getElementById("txtAltMax").value = "";
+            document.getElementById("txtAutonomia").value = "";
+            document.getElementById("txtCantPue").value = "";
+            document.getElementById("txtCantRue").value = "";
+            bloquearCampos();
+        }
+
+        function bloquearCampos(){
+            let tipoSeleccionado = document.getElementById("slTipo").value;
+
+            if(tipoSeleccionado ==="Aereo"){
+                document.getElementById("txtAltMax").disabled = false;
+                document.getElementById("txtAutonomia").disabled = false;
+                document.getElementById("txtCantPue").disabled = true;
+                document.getElementById("txtCantRue").disabled = true;
+            } else if(tipoSeleccionado === "Terrestre"){
+                document.getElementById("txtAltMax").disabled = true;
+                document.getElementById("txtAutonomia").disabled = true;
+                document.getElementById("txtCantPue").disabled = false;
+                document.getElementById("txtCantRue").disabled = false;
+            }
+        }
+
+        function validarVehiculo(modelo, anoFab, velMax){
+            if(!modelo){
+                alert("INGRESE MODELO");
+                return;
+            }
+            if(isNaN(anoFab) || anoFab <= 1885){
+                alert("INGRESE UN AÑO DE FABRICACIÓN MAYOR A 1885");
+                return;
+            }
+            if(isNaN(velMax) || velMax <= 0){
+                alert("INGRESE UNA VELOCIDAD MAYOR A 0");
+                return;
+            }
+            return true;
+        }
+
+        function validarAereo(altMax, autonomia){
+            if(isNaN(altMax) || altMax <= 0){
+                alert("INGRESE UNA ALTURA MAXIMA MAYOR A 0");
+                return;
+            }
+            if(isNaN(autonomia) || autonomia <= 0){
+                alert("INGRESE UNA AUTONOMIA MAYOR A 0");
+                return;
+            }
+            return true;
+        }
+
+        function validarTerrestre(cantPue, cantRue){
+            if(isNaN(cantPue) || cantPue <= 0){
+                alert("INGRESE UNA CANTIDAD DE PUERTAS MAYOR A 0 (entendiendo que no puede ser -1)");
+                return;
+            }
+            if(isNaN(cantRue) || cantRue <= 0){
+                alert("INGRESE UNA CANTIDAD DE RUEDAS MAYOR A 0");
+                return;
+            }
+            return true;
+        }
+
+        function ordenarVehiculos(criterio){            
+            let datosOrdenados = vehiculos.map(vehiculo =>{
+                return{
+                    id: vehiculo.id,
+                    modelo: vehiculo.modelo,
+                    anoFab: vehiculo.anoFab,
+                    velMax: vehiculo.velMax,
+                    altMax: vehiculo instanceof Aereo ? vehiculo.altMax : 0,
+                    autonomia: vehiculo instanceof Aereo ? vehiculo.autonomia : 0,
+                    cantPue: vehiculo instanceof Terrestre ? vehiculo.cantPue : 0,
+                    cantRue: vehiculo instanceof Terrestre ? vehiculo.cantRue : 0
+                };
+            })
+            
+            datosOrdenados = datosOrdenados.reduce((acumulador, current)=>{
+                acumulador.push(current);
+
+                return acumulador.sort((a, b) =>{
+                    if(criterio === "id"){
+                        return a.id - b.id;
+                    } else if(criterio === 'modelo'){
+                        const modeloA = a.modelo || "";
+                        const modeloB = b.modelo || "";
+                        return modeloA.localeCompare(modeloB);  
+                    } else if(criterio === 'anoFab'){
+                        return a.anoFab - b.anoFab;
+                    } else if(criterio === 'velMax'){
+                        return a.velMax - b.velMax;
+                    } else if(criterio === 'altMax'){
+                        return a.altMax - b.altMax;
+                    } else if(criterio === 'autonomia'){
+                        return a.autonomia - b.autonomia;
+                    } else if(criterio === 'cantPue'){
+                        return a.cantPue - b.cantPue;
+                    } else if (criterio === 'cantRue'){
+                        return a.cantRue - b.cantRue;
+                    }
+                    return 0;
+                });
+                         
+            }, []).filter((value, index, self)=>{
+                return index === self.indexOf(value);
+            });
+
+            vehiculos = datosOrdenados.map(data =>{
+                if(data.altMax > 0 || data.autonomia > 0){
+                    return new Aereo (data.id, data.modelo, data.anoFab, data.velMax, data.altMax, data.autonomia);
+                } else{
+                    return new Terrestre (data.id, data.modelo, data.anoFab, data.velMax, data.cantPue, data.cantRue);
+                }
+            });
+
+            cargarVehiculo(document.getElementById("slFiltro").value);
+        }
+
+        function actualizarColumnas(){
+            const checkboxes = [
+                {id: "cbId", index: 0},
+                {id: "cbModelo", index: 1},
+                {id: "cbAnoFab", index: 2},
+                {id: "cbVelMax", index: 3},
+                {id: "cbAltMax", index: 4},
+                {id: "cbAutonomia", index: 5},
+                {id: "cbCantPue", index: 6},
+                {id: "cbCantRue", index: 7}
+            ];
+
+            checkboxes.forEach(checkbox => {
+                const column = document.querySelectorAll("#theadDatos th")[checkbox.index];
+                column.style.display = document.getElementById(checkbox.id).checked ? "" : "none";
+
+                const cells = document.querySelectorAll(`#tbodyDatos tr td:nth-child(${checkbox.index +1})`);
+                cells.forEach(cell => {
+                    cell.style.display = document.getElementById(checkbox.id).checked ? "" : "none";
+                });
+            });
+        }
+
+
+        window.onload = function(){
+            document.getElementById("slFiltro").addEventListener("change", cambiarFiltro);
+            document.getElementById("btnCalcular").addEventListener("click", calcularVelPromedio);
+            document.getElementById("btnAgregarDatos").addEventListener("click",cambiarFormulario);
+            document.getElementById("btnCancelar").addEventListener("click", cambiarFormulario);
+            document.getElementById("btnAgregarAbm").addEventListener("click",agregarVehiculo);
+            document.getElementById("btnModificar").addEventListener("click", modificarVehiculo);
+            document.getElementById("btnEliminar").addEventListener("click", eliminarVehiculo);
+            cargarVehiculo("Todos");
+
+            document.getElementById("btnId").addEventListener("click", ()=>ordenarVehiculos('id'));
+            document.getElementById("btnModelo").addEventListener("click", ()=>ordenarVehiculos('modelo'));
+            document.getElementById("btnAnoFab").addEventListener("click", ()=>ordenarVehiculos('anoFab'));
+            document.getElementById("btnVelMax").addEventListener("click", ()=>ordenarVehiculos('velMax'));
+            document.getElementById("btnAltMax").addEventListener("click", ()=>ordenarVehiculos('altMax'));
+            document.getElementById("btnAutonomia").addEventListener("click", ()=>ordenarVehiculos('autonomia'));
+            document.getElementById("btnCantPue").addEventListener("click", ()=>ordenarVehiculos('cantPue'));
+            document.getElementById("btnCantRue").addEventListener("click", ()=>ordenarVehiculos('cantRue'));
+
+            const checkboxIds = ["cbId", "cbModelo","cbAnoFab", "cbVelMax", "cbAltMax", "cbAutonomia", "cbCantPue","cbCantRue"];
+            checkboxIds.forEach(id => {
+                document.getElementById(id).addEventListener("change", actualizarColumnas);
+            });
+
+        }
+        
+
+    </script>
+    <body>
+        <section id="formDatos">
+            <div id="tituloDatos">
+                <label id="lblTitulo">Form Datos</label>
+            </div>
+            <div>
+                <label class="lblDatos">Filtrar Por:</label>
+                <select tpye="select-box" id="slFiltro"> >
+                    <option value="Todos">Todos</option>
+                    <option value="Aereo">Aereo</option>
+                    <option value="Terrestre">Terrestre</option>
+                </select>
+            </div>
+            <div>
+                <label class="lblDatos">id:</label>
+                <input class="cbDatos" type="checkbox" id="cbId" checked>
+                <label class="lblDatos">modelo:</label>
+                <input class="cbDatos" type="checkbox" id="cbModelo" checked>
+                <label class="lblDatos">año fab:</label>
+                <input class="cbDatos" type="checkbox" id="cbAnoFab" checked>
+                <label class="lblDatos">vel max:</label>
+                <input class="cbDatos" type="checkbox" id="cbVelMax" checked>
+                <label class="lblDatos">alt max:</label>
+                <input class="cbDatos" type="checkbox" id="cbAltMax" checked>
+                <label class="lblDatos">autonomia:</label>
+                <input class="cbDatos" type="checkbox" id="cbAutonomia" checked>
+                <label class="lblDatos">cant pue:</label>
+                <input class="cbDatos" type="checkbox" id="cbCantPue" checked>
+                <label class="lblDatos">cant rue:</label>
+                <input class="cbDatos" type="checkbox" id="cbCantRue" checked>
+            </div>
+            <div>
+                <label class="lblDatos">Promedio Velocidad Maxima</label>
+                <input type="text" id="txtPromedioVel">
+                <button class="btnDatos" id="btnCalcular">Calcular</button>
+            </div>
+            <div>
+                <table id="tblDatos">
+                    <thead id="theadDatos">
+                        <tr>
+                            <th><button class="btnDatos" id="btnId">ID</button></th>
+                            <th><button class="btnDatos" id="btnModelo">Modelo</button></th>
+                            <th><button class="btnDatos" id="btnAnoFab">Año Fab</button></th>
+                            <th><button class="btnDatos" id="btnVelMax">Vel Max</button></th>
+                            <th><button class="btnDatos" id="btnAltMax">Alt Max</button></th>
+                            <th><button class="btnDatos" id="btnAutonomia">Autonomia</button></th>
+                            <th><button class="btnDatos" id="btnCantPue">Cant Pue</button></th>
+                            <th><button class="btnDatos" id="btnCantRue">Cant Rue</button></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyDatos">
+
+                    </tbody>
+                </table>
+            </div>
+            <button class="btnDatos" id="btnAgregarDatos">Agregar</button>
+        </section>
+        <section id="formAbm">
+            <div id="tituloAbm">
+                <label id="labelTituloAbm">Formulario ABM</label>
+            </div>
+            <div>
+                <label class="lblFormAbm">Id:</label>
+                <input type="text" class="txtAbm" id="txtId" disabled>
+            </div>
+            <div>
+                <label class="lblFormAbm">Modelo:</label>
+                <input type="text" class="txtAbm" id="txtModelo">
+            </div>
+            <div>
+                <label class="lblFormAbm">Año Fabricacion:</label>
+                <input type="text" class="txtAbm" id="txtAnoFab">
+            </div>
+            <div>
+                <label class="lblFormAbm">Velocidad Maxima:</label>
+                <input type="text" class="txtAbm" id="txtVelMax">
+            </div>
+            <div>
+                <label class="lblFormAbm">Tipo:</label>
+                <select class="select-box" id="slTipo">
+                    <option value="Aereo">Aereo</option>
+                    <option value="Terrestre">Terrestre</option>
+                </select>
+            </div>
+            <div>
+                <label class="lblFormAbm">Altura Maxima:</label>
+                <input type="text" class="txtAbm" id="txtAltMax">
+            </div>
+            <div>
+                <label class="lblFormAbm">Autonomia:</label>
+                <input type="text" class="txtAbm" id="txtAutonomia">
+            </div>
+            <div>
+                <label class="lblFormAbm">Cantidad Puertas:</label>
+                <input type="text" class="txtAbm" id="txtCantPue">
+            </div>
+            <div>
+                <label class="lblFormAbm">Cantidad Ruedas:</label>
+                <input type="text" class="txtAbm" id="txtCantRue">
+            </div>
+            <div>
+                <button class="btnAbm" id="btnAgregarAbm">Agregar</button>
+                <button class="btnAbm" id="btnModificar">Modificar</button>
+                <button class="btnAbm" id="btnEliminar">Eliminar</button>
+                <button class="btnAbm" id="btnCancelar">Cancelar</button>
+            </div>            
+        </section>
+    </body>
+</html>
